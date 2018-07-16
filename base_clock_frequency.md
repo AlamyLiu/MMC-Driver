@@ -48,6 +48,16 @@ index 2020e57ffa..900a633de2 100644
         host->version = (v & SDHCI_SPEC_VER_MASK) >> SDHCI_SPEC_VER_SHIFT;
 ```
 
+Compile the DBG() code
+```
+CONFIG_PRINTK=y
+CONFIG_DYNAMIC_DEBUG=y
+CONFIG_MMC_DEBUG=y
+```
+
+Enable the message<br>
+```[    0.000000] Kernel command line: console=ttySAC3,115200n8 root=/dev/mmcblk0p3 rw rootfstype=ext4 loglevel=7 dyndbg="func __sdhci_read_caps +fp; func sdhci_setup_host +fp"```
+
 See what we got
 ```
 [root@localhost ~]# dmesg | grep sdhci-caps
