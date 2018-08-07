@@ -51,3 +51,52 @@ Provide the same `compatible` string in device tree for driver model to load the
 };
 ```
 
+## Customize PROBE function
+By calling sdhci_pltfm_regisgter(), we lose the flexibility to do something for uSDHCI.
+Also, lost some device-tree configuration features. i.e.: "cd-gpios" (in mmc_of_parse).
+
+There are some i.MX6QP specific code need to be done in Probe.
+Pulling in the sdhci_pltfm_register() code and lay out i.MX6QP tasks sequence.
+
+```
+static int sdhci_basicdrv_probe(struct platform_device *pdev)
+{
+	struct sdhci_host *host;
+	int ret = 0;
+
+	host = sdhci_pltfm_init(pdev, pdata, priv_size);
+	if (IS_ERR(host))
+		return PTR_ERR(host);
+
+	/* i.MX6QP: Enable clock sources (IPG, AHB, PER) */
+
+	/* i.MX6QP: Set PINCTRL / PINMUX */
+
+	/* i.MX6QP: Update QUIRKS */
+
+	/* i.MX6QP: ROM tuning bits fix up */
+
+	sdhci_get_of_property(pdev);
+
+	/* support of "cd-gpios" & "ro-gpios", speed, voltages, ...etc */
+	ret = mmc_of_parse(host->mmc);
+	if (ret) {
+		dev_err(&pdev->dev, "parsing dt failed (%d)\n", ret);
+		goto err;
+	}
+
+	/* i.MX6QP: H.W. Errata */
+
+	ret = sdhci_add_host(host);
+	if (ret)
+		goto err;
+
+	return 0;
+
+err:
+	sdhci_pltfm_free(pdev);
+
+	return ret;
+}
+```
+
