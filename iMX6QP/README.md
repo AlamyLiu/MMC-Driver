@@ -19,3 +19,11 @@
   - QUIRKS (non-standard, errata, ...etc)
   - ...
 
+# Build the driver
+Let's start with the very basic SDHCI-OF driver
+[Initial Basic MMC Driver](SDHC_BasicDrv.md)
+- Ported from sdhci-of-hwld.c (Looks like Nintendo MMC interface is fully SDHC compliant)
+- sdhci_xxx standard functions in sdhci_ops.
+- No QUIRKs
+- sdhci_pltfm_xxx probe & remove
+
