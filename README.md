@@ -8,3 +8,6 @@ Since I had problem to understand those documents, here I compile my reading (of
 # Link driver
 Device Tree <--> Device Driver
 
+# Data structure
+[MMC driver data structure](MMC_DataStructure.md)
+
