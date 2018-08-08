@@ -222,4 +222,66 @@ static const struct sdhci_ops sdhci_basicdrv_ops = {
 };
 ```
 
+## PINCTRL & PINMUX
+In imx driver (sdhci-esdhc-imx.c), it calls to change PINCTRL in `.set_uhs_signaling`.
+Which is called by `sdhci_set_ios` when the SDHCI controller version >= SDHCI Specificaion 3.00 (TRUE in the case of i.MX6QP).
+
+However, i.MX6QP is only switching between the two timing modes.
+- MMC_TIMING_LEGACY
+- MMC_TIMING_SD_HS
+
+Also, in its device tree, it has only the `default` pinctrl setting.
+Not like the imx6sx-sabreauto.dts which has all three modes (default, state_100mhz, state_200mhz)
+
+Tracing the code in esdhc_set_uhs_signaling, the two modes are treated the same in the case of i.MX6QP.
+- Meaning --- **No PINCTRL change at all**.
+
+So the whole thing could be simplified:
+- Set PINCTRL/PINMUX in PROBE
+- Only do reset tuning in .set_uhs_signaling (maybe it could also be omitted in some way).
+
+The code
+```
+static void imx6q_reset_tuning(struct sdhci_host *host)
+{
+	u32 ctrl;
+
+	/* Reset the tuning circuit */
+	ctrl = readl(host->ioaddr + ESDHC_MIX_CTRL);
+	ctrl &= ~ESDHC_MIX_CTRL_SMPCLK_SEL;
+	ctrl &= ~ESDHC_MIX_CTRL_FBCLK_SEL;
+	writel(ctrl, host->ioaddr + ESDHC_MIX_CTRL);
+	writel(0, host->ioaddr + ESDHC_TUNE_CTRL_STATUS);
+}
+
+static void imx6q_set_uhs_signaling(
+	struct sdhci_host *host,
+	unsigned timing)
+{
+	imx6q_reset_tuning(host);
+
+/*
+	imx6q_change_pinstate(host, timing);
+*/
+}
+
+static const struct sdhci_ops sdhci_basicdrv_ops = {
+	.set_uhs_signaling = imx6q_set_uhs_signaling,
+};
+
+static int sdhci_basicdrv_probe(struct platform_device *pdev)
+{
+	struct pinctrl *pins_default;
+
+    ...
+
+	/* i.MX6QP: Set PINCTRL / PINMUX */
+	pins_default = devm_pinctrl_get_select_default(&pdev->dev);
+
+    ...
+}
+
+```
+
+
 ## Next
