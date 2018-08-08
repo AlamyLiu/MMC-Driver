@@ -192,5 +192,34 @@ static void esdhc_writel(struct sdhci_host *host, u32 val, int reg)
 #endif
 ```
 
-## Next
+## sdhci_ops.get_ro
+Since i.MX6QP uses GPIO pins for CD (Card-Detect) and RO (Read-Only/Write-Protect) detection. It would need to call `mmc_gpio_get_cd` and `mmc_gpio_get_ro` to get the status.
 
+In SDHCI layer (sdhci.c), sdhci_get_cd does call mmc_gpio_get_cd to retrieve CD information. But RO information is from controller (**SDHCI_PRESENT_STATE[SDHCI_WRITE_PROTECT]**) by default except `sdhci_host.ops.get_ro` is defined.
+```
+static int sdhci_check_ro(struct sdhci_host *host)
+{
+	...
+	else if (host->ops->get_ro)
+		is_readonly = host->ops->get_ro(host);
+	else
+		is_readonly = !(sdhci_readl(host, SDHCI_PRESENT_STATE)
+				& SDHCI_WRITE_PROTECT);
+	...
+}
+```
+Overriding the function is necessary to use GPIO for RO.
+```
+static unsigned int imx6q_basicdrv_get_ro(struct sdhci_host *host)
+{
+	pr_debug("%s\n", mmc_hostname(host->mmc));
+
+	return mmc_gpio_get_ro(host->mmc);
+}
+
+static const struct sdhci_ops sdhci_basicdrv_ops = {
+	.get_ro = imx6q_basicdrv_get_ro,
+};
+```
+
+## Next
