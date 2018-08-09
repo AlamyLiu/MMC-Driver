@@ -361,5 +361,31 @@ static const struct sdhci_pltfm_data sdhci_basicdrv_pdata = {
 };
 ```
 
+## Misc
+#### Differentiate SoC
+In PROBE function, **of_match_device** found the matched `compatible` string in imx_esdhc_dt_ids table. Its **data** field points to one of the matched SoC structure. Which is saved in **imx_data->socdata**.
+Using one of these **is_xxx_usdhc()** functions to determine which SoC the driver is running on.
+
+The **imx_data->socdata->flags** will be (ESDHC_FLAG_USDHC | ESDHC_FLAG_MAN_TUNING) in the case of i.MX6QP platform. And the value is **TRUE** for is_imx6q_usdhc() and esdhc_is_usdhc().
+```
+static struct esdhc_soc_data usdhc_imx6q_data = {
+	.flags = ESDHC_FLAG_USDHC | ESDHC_FLAG_MAN_TUNING,
+};
+
+static const struct of_device_id imx_esdhc_dt_ids[] = {
+	{ .compatible = "fsl,imx6q-usdhc", .data = &usdhc_imx6q_data, },
+	{ /* sentinel */ }
+};
+
+static inline int is_imx6q_usdhc(struct pltfm_imx_data *data)
+{
+	return data->socdata == &usdhc_imx6q_data;
+}
+static inline int esdhc_is_usdhc(struct pltfm_imx_data *data)
+{
+	return !!(data->socdata->flags & ESDHC_FLAG_USDHC);
+}
+```
+
 ## Next
 
