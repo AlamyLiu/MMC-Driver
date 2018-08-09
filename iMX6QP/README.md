@@ -294,5 +294,72 @@ i.MX6QP has its own way to handle clocks, it does not worth it to find a way to 
 
 Note: it queries PER clock value in PROBE fucntion and brings it over to those clock functions with `pltfm_host->clock`. The value on i.MX6QP is `198000000` (=~ 200 MHz: SDR104)
 
+
+## Other i.MX6QP specific functions
+It's pretty straight forward to bring other tasks/functions over. Just because it's not standard SDHC and need special care.
+
+For example:
+- eSDHC/uSDHC has special design.
+- Caps (and Caps1) register(s) doesn't report correct value, driver needs to handles those corner cases. (It proves again that Hardware == Software, when hardware does not do its job well, Software needs to clean up for it, with much more effort. Memory, Speed, ...etc)
+
+#### PROBE
+- QUIRKS
+- Clear tuning bits
+- HWInit (Errata alike)
+```
+static int sdhci_basicdrv_probe(struct platform_device *pdev)
+{
+	...
+	/* Update QUIRKS */
+	host->quirks2 |= SDHCI_QUIRK2_PRESET_VALUE_BROKEN;
+	host->mmc->caps |= MMC_CAP_1_8V_DDR;
+	host->quirks2 |= SDHCI_QUIRK2_BROKEN_HS200;
+
+	/* clear tuning bits in case ROM has set it already */
+	writel(0x0, host->ioaddr + ESDHC_MIX_CTRL);
+	writel(0x0, host->ioaddr + SDHCI_ACMD12_ERR);
+	writel(0x0, host->ioaddr + ESDHC_TUNE_CTRL_STATUS);
+	...
+
+	/* Errata */
+	imx6q_basicdrv_hwinit(host);
+	...
+}
+```
+#### SDHCI_OPS (sdhci_host.ops)
+```
+static const struct sdhci_ops sdhci_basicdrv_ops = {
+#ifdef CONFIG_MMC_SDHCI_IO_ACCESSORS
+	.read_l = esdhc_readl,
+	.read_w = esdhc_readw,
+	.read_b = esdhc_readb,
+	.write_l = esdhc_writel,
+	.write_w = esdhc_writew,
+	.write_b = esdhc_writeb,
+#endif
+
+	.reset = imx6q_basicdrv_reset,
+	.get_max_timeout_count = imx6q_basicdrv_get_max_timeout_count,
+	.set_timeout = imx6q_basicdrv_set_timeout,
+	.get_max_clock = imx6q_basicdrv_get_max_clock,
+	.get_min_clock = imx6q_basicdrv_get_min_clock,
+	.set_clock = imx6q_basicdrv_set_clock,
+	.get_ro = imx6q_basicdrv_get_ro,
+	.set_bus_width = imx6q_basicdrv_set_bus_width,
+	.set_uhs_signaling = imx6q_basicdrv_set_uhs_signaling,
+	.platform_execute_tuning = imx6q_basicdrv_executing_tuning,
+};
+
+static const struct sdhci_pltfm_data sdhci_basicdrv_pdata = {
+	/* i.MX6QP quirks */
+	.quirks = ESDHC_DEFAULT_QUIRKS | SDHCI_QUIRK_NO_HISPD_BIT
+			| SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC
+			| SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC
+			| SDHCI_QUIRK_BROKEN_CARD_DETECTION,
+
+	.ops = &sdhci_basicdrv_ops,
+};
+```
+
 ## Next
 
