@@ -283,5 +283,16 @@ static int sdhci_basicdrv_probe(struct platform_device *pdev)
 
 ```
 
+## Clocks
+i.MX6QP has its own way to handle clocks, it does not worth it to find a way to blend into standard SDHC clock framework. Just bringing those functions over.
+
+1. Enable the IPG, AHB, PER clocks in PROBE.
+2. Porting the sdhci_host.ops (sdhci_ops) clock functions
+- .get_max_clock
+- .get_min_clock
+- .set_clock
+
+Note: it queries PER clock value in PROBE fucntion and brings it over to those clock functions with `pltfm_host->clock`. The value on i.MX6QP is `198000000` (=~ 200 MHz: SDR104)
 
 ## Next
+
