@@ -387,5 +387,12 @@ static inline int esdhc_is_usdhc(struct pltfm_imx_data *data)
 }
 ```
 
-## Next
+## Fire it up
+With those basic functions in place, it should be able to recognize the SD Memory card (tested on SD2 socket).
+
+Please find the experiment source code for i.MX6QP paltform (`sdhci-of.basicdrv.imx6qp.c`) in the directory.
+
+Based on kernel v4.17.3.
+
+2018/08/09
 
