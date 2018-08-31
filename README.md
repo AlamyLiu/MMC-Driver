@@ -12,3 +12,6 @@ Device Tree <--> Device Driver
 ## i.MX6QP MMC driver study
 [i.MX6QP MMC driver](iMX6QP/README.md)
 
+## MicroZed MMC driver study
+[Xilinx MicroZed MMC driver](microzed/README.md)
+
